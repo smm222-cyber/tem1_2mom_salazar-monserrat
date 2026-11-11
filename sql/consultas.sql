@@ -54,7 +54,9 @@ GROUP BY product_id, product_name
 HAVING SUM(sales) > 0
 ORDER BY lugar_margen
 LIMIT 20;
---INTERPRETACIÓN Y 
+--INTERPRETACIÓN Y CONCLUSIÓN
+-- Con estos resultados se puede identificar los productos más rentables, los productos con mayores ventas y 
+--los productos con menor margen de ganancia para poder tomar decisiones de negocio informadas.
 --Pregunta 6: Analisis de descuentos
 
 SELECT
@@ -88,3 +90,8 @@ GROUP BY category, sub_category
 ORDER BY ganancia ASC
 LIMIT 20;
 
+-- INTERPRETACIÓN Y CONCLUSIÓN
+-- Con estos resultados se puede identificar el impacto de los descuentos en la rentabilidad de los productos,
+--saber esto nos ayudará a tomar decisiones sobre la estrategia de precios y descuentos para maximizar la rentabilidad.
+
+-- Pregunta 7: Analisis de tendencias temporales
