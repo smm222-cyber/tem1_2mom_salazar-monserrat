@@ -1,0 +1,36 @@
+services:
+  namenode:
+    image: crs4/namenode:3.2.1
+    container_name: namenode
+    hostname: namenode
+    ports:
+      - "8020:8020"
+      - "9870:9870"
+      - "9871:9871"
+
+  datanode:
+    image: crs4/datanode:3.2.1
+    container_name: datanode
+    hostname: datanode
+    depends_on:
+      - namenode
+    environment:
+      NAMENODE_HOSTNAME: namenode
+    ports:
+      - "9864:9864"
+      - "9865:9865"
+      - "9866:9866"
+      - "9867:9867"
+
+  hive-server:
+    build:
+      context: ./hive
+    image: hive-crs4:3.1.2
+    container_name: hive-server
+    depends_on:
+      - namenode
+      - datanode
+    environment:
+      NAMENODE_HOSTNAME: namenode
+    stdin_open: true
+    tty: true
