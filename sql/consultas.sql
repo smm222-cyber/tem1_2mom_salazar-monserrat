@@ -1,4 +1,5 @@
 -- Pregunta 2: Auditoria de calidad e integración de datos.
+-- Estrategia: contar registros, valores únicos, nulos y datos fuera de rango.
 SELECT
   COUNT(*) AS total_registros,
   COUNT(DISTINCT row_id) AS filas_unicas,
@@ -20,9 +21,10 @@ FROM superstore;
 Con estos resultados se puede identificar el estado de la calidad de los datos en la tabla superstore.
  Se observa que su total de registros, filas únicas, identificadores duplicados, órdenes únicas y clientes únicos.
   Además, se identifican posibles problemas de calidad de datos, como valores nulos en campos clave, fechas de pedido y envío inválidas, ventas que no son positivas, y otros datos irregulares.
--- Pregunta 3: Analisis de evolucion comercial
+
 
 --Pregunta 5: Ranking de producto según rentabilidad
+-- Estrategia: agrupar por producto y ordenar los resultados con RANK().
 SELECT
   product_id,
   product_name,
@@ -44,6 +46,7 @@ GROUP BY product_id, product_name
 ORDER BY lugar_ventas
 LIMIT 20;
 
+-- Estrategia: calcular el margen y localizar los productos con menor rentabilidad.
 SELECT
   product_id,
   product_name,
@@ -59,6 +62,7 @@ LIMIT 20;
 --los productos con menor margen de ganancia para poder tomar decisiones de negocio informadas.
 --Pregunta 6: Analisis de descuentos
 
+-- Estrategia: clasificar los descuentos y comparar la ganancia y las pérdidas.
 SELECT
   CASE
     WHEN discount = 0 THEN 'Sin descuento'
@@ -80,6 +84,7 @@ GROUP BY
   END
 ORDER BY porcentaje_no_rentable DESC;
 
+-- Estrategia: comparar el descuento promedio y la ganancia por categoría.
 SELECT
   category,
   sub_category,
@@ -95,3 +100,66 @@ LIMIT 20;
 --saber esto nos ayudará a tomar decisiones sobre la estrategia de precios y descuentos para maximizar la rentabilidad.
 
 -- Pregunta 7: Analisis de tendencias temporales
+
+-- Estrategia: agrupar las ventas y ganancias por mes y usar LAG() para comparar periodos.
+SELECT
+  mes,
+  ROUND(ventas, 2) AS ventas,
+  ROUND(ganancia, 2) AS ganancia,
+  ROUND(
+    100 * (ventas - LAG(ventas) OVER (ORDER BY mes))
+    / NULLIF(LAG(ventas) OVER (ORDER BY mes), 0),
+    2
+  ) AS variacion_mes_anterior,
+  ROUND(
+    100 * (ventas - LAG(ventas, 12) OVER (ORDER BY mes))
+    / NULLIF(LAG(ventas, 12) OVER (ORDER BY mes), 0),
+    2
+  ) AS variacion_mismo_mes_anterior,
+  ROUND(
+    AVG(ventas) OVER (
+      ORDER BY mes
+      ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+    ),
+    2
+  ) AS promedio_movil_3_meses
+FROM (
+  SELECT
+    FROM_UNIXTIME(UNIX_TIMESTAMP(order_date, 'M/d/yyyy'), 'yyyy-MM') AS mes,
+    SUM(sales) AS ventas,
+    SUM(profit) AS ganancia
+  FROM superstore
+  WHERE order_date IS NOT NULL
+  GROUP BY FROM_UNIXTIME(UNIX_TIMESTAMP(order_date, 'M/d/yyyy'), 'yyyy-MM')
+) meses
+ORDER BY mes;
+
+
+-- Estrategia: ordenar los meses por ventas y seleccionar los tres mayores y menores.
+SELECT
+  mes,
+  ROUND(ventas, 2) AS ventas,
+  CASE
+    WHEN ranking_mayor <= 3 THEN 'Entre los 3 meses con mayor venta'
+    ELSE 'Entre los 3 meses con menor venta'
+  END AS tipo
+FROM (
+  SELECT
+    mes,
+    ventas,
+    RANK() OVER (ORDER BY ventas DESC) AS ranking_mayor,
+    RANK() OVER (ORDER BY ventas ASC) AS ranking_menor
+  FROM (
+    SELECT
+      FROM_UNIXTIME(UNIX_TIMESTAMP(order_date, 'M/d/yyyy'), 'yyyy-MM') AS mes,
+      SUM(sales) AS ventas
+    FROM superstore
+    WHERE order_date IS NOT NULL
+    GROUP BY FROM_UNIXTIME(UNIX_TIMESTAMP(order_date, 'M/d/yyyy'), 'yyyy-MM')
+  ) meses
+) ranking
+WHERE ranking_mayor <= 3 OR ranking_menor <= 3
+ORDER BY ventas DESC;
+
+--INTERPRETACIÓN Y CONCLUSIÓN
+-- Con estos resultados se puede identificar las tendencias de ventas y ganancias a lo largo del tiempo,
